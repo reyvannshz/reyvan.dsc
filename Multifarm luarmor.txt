@@ -130,11 +130,13 @@ local Client = Players.LocalPlayer
 local genv = getgenv()
 
 pcall(function()
-    genv.Hyphon_2102 = filtergc("function", { StartLine = 2102, IgnoreExecutor = true }, true)
+    if filtergc then
+        genv.Hyphon_2102 = filtergc("function", { StartLine = 2102, IgnoreExecutor = true }, true)
+    end
 end)
 
 pcall(function()
-    if genv.Hyphon_2102 then
+    if genv.Hyphon_2102 and filtergc then
         genv.Hyphon_2247 = filtergc("function", { StartLine = 2247, Source = debug.info(genv.Hyphon_2102, "s"), IgnoreExecutor = true }, true)
         genv.Hyphon_2846 = filtergc("function", { StartLine = 2846, Source = debug.info(genv.Hyphon_2102, "s"), IgnoreExecutor = true }, true)
         genv.Hyphon_fake_dec = filtergc("function", { StartLine = 1097, Source = debug.info(genv.Hyphon_2102, "s"), IgnoreExecutor = true }, true)
@@ -195,7 +197,8 @@ local Emulator_Data = {
 local Hyphon_Check = nil
 if Emulator_Data.Hyphon_Check["Hyphon_Check"] then
     pcall(function()
-        Hyphon_Check = hookfunction(Emulator_Data.Hyphon_Check["Hyphon_Check"].FireServer, function(self, ...)
+        local orig = Emulator_Data.Hyphon_Check["Hyphon_Check"].FireServer
+        Hyphon_Check = hookfunction(orig, function(self, ...)
             Emulator_Data.Hyphon_Check["Tick"] = tick()
             return Hyphon_Check(self, ...)
         end)
@@ -205,13 +208,14 @@ end
 local RemoteFunction = nil
 if Emulator_Data.RemoteFunction["RemoteFunction"] then
     pcall(function()
-        RemoteFunction = hookfunction(Emulator_Data.RemoteFunction["RemoteFunction"].InvokeServer, function(self, ...)
+        local orig = Emulator_Data.RemoteFunction["RemoteFunction"].InvokeServer
+        RemoteFunction = hookfunction(orig, function(self, ...)
             local Arguments = table.pack(...)
             Emulator_Data.RemoteFunction["Tick"] = tick()
             if not Emulator_Data.Emulator_Set and type(Arguments[1]) == "table" and Arguments[1][1] ~= nil then
                 Emulator_Data.RemoteFunction["Token One"] = Arguments[1][1]
                 Emulator_Data.RemoteFunction["Token Two"] = Arguments[1][2]
-                Emulator_Data.RemoteFunction["Current Number"] = genv.Hyphon_Decode and genv.Hyphon_Decode(Arguments[1][4]) or Arguments[1][4]
+                Emulator_Data.RemoteFunction["Current Number"] = genv.Hyphon_Decode and pcall(function() return genv.Hyphon_Decode(Arguments[1][4]) end) and genv.Hyphon_Decode(Arguments[1][4]) or Arguments[1][4]
                 Emulator_Data.RemoteFunction["Token Three"] = Arguments[1][6]
                 Emulator_Data.RemoteFunction["Token Four"] = Arguments[1][11]
                 if type(Arguments[1][12]) == "table" and Arguments[1][12]["Tablets"] ~= nil then
@@ -233,31 +237,44 @@ genv.Emulator_Set = true
 
 local OldBit32 = nil
 pcall(function()
-    OldBit32 = hookfunction(bit32.bxor, function(...)
-        if not checkcaller() then
-            if getcallingscript() == genv.Hyphon_Script then
-                return task.wait(9e9)
+    if bit32 and bit32.bxor then
+        local orig = bit32.bxor
+        OldBit32 = hookfunction(orig, function(...)
+            if not checkcaller() then
+                if getcallingscript() == genv.Hyphon_Script then
+                    return task.wait(9e9)
+                end
             end
-        end
-        return OldBit32(...)
-    end)
+            return OldBit32(...)
+        end)
+    end
 end)
 
 pcall(function()
-    local Wrapped_Functions = filtergc("function", {
-        Upvalues = {"Attempted function hijacking detected. Logged."},
-        Constants = {":P"}
-    })
-    for _, Function in pairs(Wrapped_Functions) do
-        local Upvalues = debug.getupvalues(Function)
-        if #Upvalues == 20 then
-            for _, Upvalue in pairs(Upvalues) do
-                if typeof(Upvalue) == "function" and islclosure(Upvalue) then
-                    Upvalues = debug.getupvalues(Upvalue)
-                    if #Upvalues == 17 then
-                        hookfunction(Function, function() end)
+    if filtergc then
+        local Wrapped_Functions = filtergc("function", {
+            Upvalues = {"Attempted function hijacking detected. Logged."},
+            Constants = {":P"}
+        })
+        if Wrapped_Functions then
+            for _, Function in pairs(Wrapped_Functions) do
+                pcall(function()
+                    local Upvalues = debug.getupvalues(Function)
+                    if #Upvalues == 20 then
+                        for _, Upvalue in pairs(Upvalues) do
+                            if typeof(Upvalue) == "function" and islclosure(Upvalue) then
+                                pcall(function()
+                                    Upvalues = debug.getupvalues(Upvalue)
+                                    if #Upvalues == 17 then
+                                        pcall(function()
+                                            hookfunction(Function, function() end)
+                                        end)
+                                    end
+                                end)
+                            end
+                        end
                     end
-                end
+                end)
             end
         end
     end
