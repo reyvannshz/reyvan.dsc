@@ -126,9 +126,9 @@ local function SafeHook(obj, method, cb)
     if not obj or not obj[method] then return false end
     local success, err = pcall(function()
         local orig = obj[method]
-        hookfunction(orig, function(self, ...)
+        hookfunction(orig, newcclosure(function(self, ...)
             return cb(self, ...)
-        end)
+        end))
     end)
     return success
 end
@@ -171,10 +171,10 @@ local function SpoofHyphonCheck()
     fake.Parent = ms
     
     local origFind = ms.FindFirstChild
-    hookfunction(origFind, function(self, name, ...)
+    hookfunction(origFind, newcclosure(function(self, name, ...)
         if name == "Hyphon_Check" then return fake end
         return origFind(self, name, ...)
-    end)
+    end))
 end
 pcall(SpoofHyphonCheck)
 
@@ -203,10 +203,10 @@ game.DescendantAdded:Connect(function(obj)
 end)
 
 local oldExit = os.exit
-hookfunction(os.exit, function() return nil end)
+hookfunction(os.exit, newcclosure(function() return nil end))
 
 local oldShutdown = game.Shutdown
-hookfunction(oldShutdown, function() return nil end)
+hookfunction(oldShutdown, newcclosure(function() return nil end))
 
 if execLower:find("solara") then
     if syn and syn.protect then syn.protect(getfenv()) end
