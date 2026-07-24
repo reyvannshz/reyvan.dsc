@@ -131,13 +131,20 @@ local genv = getgenv()
 
 pcall(function()
     genv.Hyphon_2102 = filtergc("function", { StartLine = 2102, IgnoreExecutor = true }, true)
-    genv.Hyphon_2247 = filtergc("function", { StartLine = 2247, Source = debug.info(genv.Hyphon_2102, "s"), IgnoreExecutor = true }, true)
-    genv.Hyphon_2846 = filtergc("function", { StartLine = 2846, Source = debug.info(genv.Hyphon_2102, "s"), IgnoreExecutor = true }, true)
-    genv.Hyphon_fake_dec = filtergc("function", { StartLine = 1097, Source = debug.info(genv.Hyphon_2102, "s"), IgnoreExecutor = true }, true)
-    genv.Hyphon_Encode = debug.getupvalue(genv.Hyphon_2102, 1)
-    genv.Hyphon_Decode = debug.getupvalue(genv.Hyphon_2102, 21)
-    genv.Hyphon_Script = nil
+end)
 
+pcall(function()
+    if genv.Hyphon_2102 then
+        genv.Hyphon_2247 = filtergc("function", { StartLine = 2247, Source = debug.info(genv.Hyphon_2102, "s"), IgnoreExecutor = true }, true)
+        genv.Hyphon_2846 = filtergc("function", { StartLine = 2846, Source = debug.info(genv.Hyphon_2102, "s"), IgnoreExecutor = true }, true)
+        genv.Hyphon_fake_dec = filtergc("function", { StartLine = 1097, Source = debug.info(genv.Hyphon_2102, "s"), IgnoreExecutor = true }, true)
+        genv.Hyphon_Encode = debug.getupvalue(genv.Hyphon_2102, 1)
+        genv.Hyphon_Decode = debug.getupvalue(genv.Hyphon_2102, 21)
+    end
+end)
+
+pcall(function()
+    genv.Hyphon_Script = nil
     for _, Object in pairs(getnilinstances()) do
         if Object:IsA("Script") and Object.Name:len() == 32 then
             genv.Hyphon_Script = Object
@@ -146,22 +153,34 @@ pcall(function()
     end
 end)
 
+if not genv.Hyphon_Script then
+    warn("[Hyphon] Hyphon_Script not found. Emulator cannot function properly.")
+    task.wait(1)
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    if LocalPlayer then
+        pcall(function()
+            LocalPlayer:Kick("Hyphon emulator initialization failed. Please rejoin.")
+        end)
+    end
+    return
+end
+
 if not genv.Hyphon_2102 then warn("[Hyphon] Hyphon_2102 not found, using fallback") end
 if not genv.Hyphon_2247 then warn("[Hyphon] Hyphon_2247 not found, using fallback") end
 if not genv.Hyphon_2846 then warn("[Hyphon] Hyphon_2846 not found, using fallback") end
 if not genv.Hyphon_fake_dec then warn("[Hyphon] Hyphon_fake_dec not found, using fallback") end
-if not genv.Hyphon_Script then warn("[Hyphon] Hyphon_Script not found, using fallback") end
 
 local Emulator_Data = {
     Emulator_Set = false,
     Hyphon_Check = {
         ["Tick"] = nil,
         ["Hyphon_Check"] = MemoryStoreService:FindFirstChild("Hyphon_Check"),
-        ["Handshake_Version"] = genv.Hyphon_2846 and tostring(debug.getupvalue(genv.Hyphon_2846, 42)) .. "Handshake_V5" or "Handshake_V5",
+        ["Handshake_Version"] = (genv.Hyphon_2846 and pcall(function() return tostring(debug.getupvalue(genv.Hyphon_2846, 42)) end) and tostring(debug.getupvalue(genv.Hyphon_2846, 42)) .. "Handshake_V5") or "Handshake_V5",
     },
     RemoteFunction = {
         ["Tick"] = nil,
-        ["RemoteFunction"] = genv.Hyphon_2247 and debug.getupvalue(genv.Hyphon_2247, 6),
+        ["RemoteFunction"] = genv.Hyphon_2247 and pcall(function() return debug.getupvalue(genv.Hyphon_2247, 6) end) and debug.getupvalue(genv.Hyphon_2247, 6),
         ["Token One"] = nil,
         ["Token Two"] = nil,
         ["Current Number"] = nil,
@@ -256,19 +275,19 @@ pcall(function()
                 RF.OnClientInvoke = function(...)
                     local Arguments = table.pack(...)
                     if Arguments[1] ~= nil then
-                        Emulator_Data.RemoteFunction["Token Two"] = genv.Hyphon_Decode and genv.Hyphon_Decode(Arguments[1]) or Arguments[1]
+                        Emulator_Data.RemoteFunction["Token Two"] = genv.Hyphon_Decode and pcall(function() return genv.Hyphon_Decode(Arguments[1]) end) and genv.Hyphon_Decode(Arguments[1]) or Arguments[1]
                     end
                     Emulator_Data.RemoteFunction["Current Number"] = -1
                     local Table = {
-                        genv.Hyphon_2102 and debug.getupvalue(genv.Hyphon_2102, 26) or nil,
-                        genv.Hyphon_Encode and genv.Hyphon_Encode("Hyphon-," .. tostring(math.random(242, 789) .. "{ Date (Data: " .. tostring(math.random(1, 9)) .. ")")) or "Hyphon-," .. tostring(math.random(242, 789)),
-                        genv.Hyphon_fake_dec and genv.Hyphon_fake_dec(Arguments[3], tostring(Client.UserId)) or Arguments[3],
-                        genv.Hyphon_2102 and debug.getupvalue(genv.Hyphon_2102, 29)() or function() end,
-                        genv.Hyphon_Encode and genv.Hyphon_Encode(tostring(Workspace:GetServerTimeNow())) or tostring(Workspace:GetServerTimeNow()),
+                        genv.Hyphon_2102 and pcall(function() return debug.getupvalue(genv.Hyphon_2102, 26) end) and debug.getupvalue(genv.Hyphon_2102, 26) or nil,
+                        genv.Hyphon_Encode and pcall(function() return genv.Hyphon_Encode("Hyphon-," .. tostring(math.random(242, 789) .. "{ Date (Data: " .. tostring(math.random(1, 9)) .. ")")) end) and genv.Hyphon_Encode("Hyphon-," .. tostring(math.random(242, 789) .. "{ Date (Data: " .. tostring(math.random(1, 9)) .. ")")) or "Hyphon-," .. tostring(math.random(242, 789)),
+                        genv.Hyphon_fake_dec and pcall(function() return genv.Hyphon_fake_dec(Arguments[3], tostring(Client.UserId)) end) and genv.Hyphon_fake_dec(Arguments[3], tostring(Client.UserId)) or Arguments[3],
+                        genv.Hyphon_2102 and pcall(function() return debug.getupvalue(genv.Hyphon_2102, 29)() end) and debug.getupvalue(genv.Hyphon_2102, 29)() or function() end,
+                        genv.Hyphon_Encode and pcall(function() return genv.Hyphon_Encode(tostring(Workspace:GetServerTimeNow())) end) and genv.Hyphon_Encode(tostring(Workspace:GetServerTimeNow())) or tostring(Workspace:GetServerTimeNow()),
                         {
-                            CI = genv.Hyphon_Encode and genv.Hyphon_Encode(tostring(tick())) or tostring(tick()),
+                            CI = genv.Hyphon_Encode and pcall(function() return genv.Hyphon_Encode(tostring(tick())) end) and genv.Hyphon_Encode(tostring(tick())) or tostring(tick()),
                             TL = Emulator_Data.RemoteFunction["Tablets"],
-                            LS = genv.Hyphon_2102 and #tostring(debug.getupvalue(genv.Hyphon_2102, 37)) + game.PlaceVersion or game.PlaceVersion
+                            LS = genv.Hyphon_2102 and pcall(function() return #tostring(debug.getupvalue(genv.Hyphon_2102, 37)) + game.PlaceVersion end) and #tostring(debug.getupvalue(genv.Hyphon_2102, 37)) + game.PlaceVersion or game.PlaceVersion
                         }
                     }
                     return table.unpack(Table)
@@ -289,16 +308,16 @@ task.spawn(function()
             Emulator_Data.RemoteFunction["Token One"],
             Emulator_Data.RemoteFunction["Token Two"],
             nil,
-            [4] = genv.Hyphon_Encode and genv.Hyphon_Encode(tostring(Emulator_Data.RemoteFunction["Current Number"])) or tostring(Emulator_Data.RemoteFunction["Current Number"]),
-            [5] = genv.Hyphon_2247 and debug.getupvalue(genv.Hyphon_2247, 12)("_1") .. "__index" or "__index",
+            [4] = genv.Hyphon_Encode and pcall(function() return genv.Hyphon_Encode(tostring(Emulator_Data.RemoteFunction["Current Number"])) end) and genv.Hyphon_Encode(tostring(Emulator_Data.RemoteFunction["Current Number"])) or tostring(Emulator_Data.RemoteFunction["Current Number"]),
+            [5] = genv.Hyphon_2247 and pcall(function() return debug.getupvalue(genv.Hyphon_2247, 12)("_1") end) and debug.getupvalue(genv.Hyphon_2247, 12)("_1") .. "__index" or "__index",
             [6] = Emulator_Data.RemoteFunction["Token Three"],
-            [7] = genv.Hyphon_2247 and debug.getupvalue(genv.Hyphon_2247, 20),
-            [8] = genv.Hyphon_Encode and genv.Hyphon_Encode(tostring(os.time())) or tostring(os.time()),
+            [7] = genv.Hyphon_2247 and pcall(function() return debug.getupvalue(genv.Hyphon_2247, 20) end) and debug.getupvalue(genv.Hyphon_2247, 20),
+            [8] = genv.Hyphon_Encode and pcall(function() return genv.Hyphon_Encode(tostring(os.time())) end) and genv.Hyphon_Encode(tostring(os.time())) or tostring(os.time()),
             [9] = tick(),
-            [10] = genv.Hyphon_2247 and debug.getupvalue(genv.Hyphon_2247, 23)[debug.getupvalue(genv.Hyphon_2247, 24)],
+            [10] = genv.Hyphon_2247 and pcall(function() return debug.getupvalue(genv.Hyphon_2247, 23) end) and pcall(function() return debug.getupvalue(genv.Hyphon_2247, 24) end) and debug.getupvalue(genv.Hyphon_2247, 23)[debug.getupvalue(genv.Hyphon_2247, 24)],
             [11] = Emulator_Data.RemoteFunction["Token Four"],
-            [12] = { ["CurrentTick"] = genv.Hyphon_Encode and genv.Hyphon_Encode(tostring(tick())) or tostring(tick()), ["Tablets"] = Emulator_Data.RemoteFunction["Tablets"] },
-            [13] = { ["LuaFunction"] = Emulator_Data.RemoteFunction["LuaFunction"], ["SSL"] = Emulator_Data.RemoteFunction["SSL"], ["Metatable code"] = genv.Hyphon_Encode and genv.Hyphon_Encode("nil") or "nil" },
+            [12] = { ["CurrentTick"] = genv.Hyphon_Encode and pcall(function() return genv.Hyphon_Encode(tostring(tick())) end) and genv.Hyphon_Encode(tostring(tick())) or tostring(tick()), ["Tablets"] = Emulator_Data.RemoteFunction["Tablets"] },
+            [13] = { ["LuaFunction"] = Emulator_Data.RemoteFunction["LuaFunction"], ["SSL"] = Emulator_Data.RemoteFunction["SSL"], ["Metatable code"] = genv.Hyphon_Encode and pcall(function() return genv.Hyphon_Encode("nil") end) and genv.Hyphon_Encode("nil") or "nil" },
         })
     end
     task.wait(35 - (tick() - (Emulator_Data.RemoteFunction["Tick"] or tick())))
